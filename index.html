@@ -373,6 +373,22 @@
       if (e.target === document.getElementById("modal-bg")) closeModal();
     });
 
+    // 用canvas產生PNG圖示
+    function makeIcon(size) {
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#6366f1";
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size * 0.2);
+      ctx.fill();
+      ctx.font = `${size * 0.55}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🏠", size / 2, size / 2);
+      return c.toDataURL("image/png");
+    }
+
     // PWA manifest
     const manifest = {
       name: "家事追蹤",
@@ -381,7 +397,10 @@
       display: "standalone",
       background_color: "#f1f5f9",
       theme_color: "#6366f1",
-      icons: [{ src: "https://api.iconify.design/twemoji/house.svg", sizes: "192x192", type: "image/svg+xml" }]
+      icons: [
+        { src: makeIcon(192), sizes: "192x192", type: "image/png" },
+        { src: makeIcon(512), sizes: "512x512", type: "image/png" }
+      ]
     };
     const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
     document.getElementById("manifest-placeholder").href = URL.createObjectURL(blob);
