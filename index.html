@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家事追蹤</title>
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="家事追蹤">
+  <link rel="manifest" id="manifest-placeholder">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      color: #1e293b;
+    }
+    header {
+      background: #6366f1;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    #sync-status { font-size: 0.75rem; opacity: 0.85; }
+    .stats {
+      display: flex;
+      gap: 10px;
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .stat-card {
+      flex: 1;
+      min-width: 80px;
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .stat-card .num { font-size: 1.8rem; font-weight: 700; }
+    .stat-card .label { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+    .stat-card.overdue .num { color: #ef4444; }
+    .stat-card.soon .num { color: #f97316; }
+    .stat-card.ok .num { color: #22c55e; }
+    .chores-list { padding: 0 16px 100px; }
+    .chore-item {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 4px solid #e2e8f0;
+      transition: transform 0.1s;
+    }
+    .chore-item:active { transform: scale(0.98); }
+    .chore-item.overdue { border-left-color: #ef4444; }
+    .chore-item.soon { border-left-color: #f97316; }
+    .chore-item.ok { border-left-color: #22c55e; }
+    .chore-info { flex: 1; min-width: 0; }
+    .chore-name { font-weight: 600; font-size: 1rem; }
+    .chore-meta { font-size: 0.78rem; color: #64748b; margin-top: 3px; }
+    .chore-badge {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-overdue { background: #fee2e2; color: #dc2626; }
+    .badge-soon { background: #ffedd5; color: #ea580c; }
+    .badge-ok { background: #dcfce7; color: #16a34a; }
+    .badge-never { background: #f1f5f9; color: #64748b; }
+    .chore-actions { display: flex; gap: 6px; align-items: center; }
+    .btn-done {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-done:active { opacity: 0.8; }
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      color: #94a3b8;
+    }
+    .btn-icon:hover { color: #475569; }
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Modal */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 16px; }
+    .modal label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 4px; margin-top: 12px; }
+    .modal input {
+      width: 100%;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+    .modal input:focus { border-color: #6366f1; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1;
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-save {
+      flex: 2;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .btn-delete {
+      background: #fee2e2;
+      color: #dc2626;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; color: #e2e8f0; }
+      .stat-card, .chore-item, .modal { background: #1e293b; }
+      .modal input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+      .btn-cancel { background: #334155; color: #cbd5e1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏠 家事追蹤</h1>
+    <span id="sync-status">連線中...</span>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card overdue"><div class="num" id="count-overdue">0</div><div class="label">逾期</div></div>
+    <div class="stat-card soon"><div class="num" id="count-soon">0</div><div class="label">即將到期</div></div>
+    <div class="stat-card ok"><div class="num" id="count-ok">0</div><div class="label">良好</div></div>
+  </div>
+
+  <div class="chores-list" id="chores-list"></div>
+
+  <button class="fab" onclick="openAddModal()">＋ 新增家事</button>
+
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <h2 id="modal-title">新增家事</h2>
+      <label>家事名稱</label>
+      <input type="text" id="input-name" placeholder="例：換床單">
+      <label>週期（天）</label>
+      <input type="number" id="input-days" placeholder="例：30" min="1">
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button id="btn-delete-item" class="btn-delete" onclick="deleteItem()" style="display:none">刪除</button>
+        <button class="btn-save" onclick="saveItem()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyANInR3I5V0FjC9HQ-mIzJ1nKQqXJiXB_k",
+      authDomain: "family-chores-84525.firebaseapp.com",
+      databaseURL: "https://family-chores-84525-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "family-chores-84525",
+      storageBucket: "family-chores-84525.firebasestorage.app",
+      messagingSenderId: "836817192036",
+      appId: "1:836817192036:web:083438b49178f3a89c0b71"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const choresRef = ref(db, "chores");
+
+    const DEFAULT_CHORES = [
+      { name: "換床單", days: 30 },
+      { name: "換枕頭套", days: 14 },
+      { name: "刷廁所", days: 7 },
+      { name: "打掃二樓", days: 14 },
+      { name: "打掃陽台", days: 30 },
+      { name: "吸沙發", days: 14 },
+    ];
+
+    let chores = {};
+    let editingKey = null;
+
+    document.getElementById("sync-status").textContent = "同步中...";
+
+    onValue(choresRef, (snapshot) => {
+      chores = snapshot.val() || {};
+
+      // 首次使用時寫入預設資料
+      if (Object.keys(chores).length === 0) {
+        DEFAULT_CHORES.forEach(c => {
+          const key = Date.now() + Math.random().toString(36).slice(2);
+          set(ref(db, `chores/${key}`), { name: c.name, days: c.days, lastDone: null });
+        });
+        return;
+      }
+
+      renderChores();
+      document.getElementById("sync-status").textContent = "已同步 ✓";
+    });
+
+    function getStatus(chore) {
+      if (!chore.lastDone) return { text: "從未完成", cls: "never", sort: -1 };
+      const last = new Date(chore.lastDone);
+      const next = new Date(last.getTime() + chore.days * 86400000);
+      const now = new Date();
+      const diffDays = Math.round((next - now) / 86400000);
+      if (diffDays < 0) return { text: `逾期 ${-diffDays} 天`, cls: "overdue", sort: diffDays };
+      if (diffDays <= 3) return { text: `${diffDays} 天後到期`, cls: "soon", sort: diffDays };
+      return { text: `${diffDays} 天後到期`, cls: "ok", sort: diffDays };
+    }
+
+    function renderChores() {
+      const list = document.getElementById("chores-list");
+      let overdue = 0, soon = 0, ok = 0;
+
+      const sorted = Object.entries(chores).sort((a, b) => {
+        return getStatus(a[1]).sort - getStatus(b[1]).sort;
+      });
+
+      list.innerHTML = sorted.map(([key, c]) => {
+        const s = getStatus(c);
+        if (s.cls === "overdue" || s.cls === "never") overdue++;
+        else if (s.cls === "soon") soon++;
+        else ok++;
+
+        const lastText = c.lastDone
+          ? `上次：${new Date(c.lastDone).toLocaleDateString("zh-TW")} ・ 每 ${c.days} 天`
+          : `每 ${c.days} 天`;
+
+        return `
+          <div class="chore-item ${s.cls === "never" ? "overdue" : s.cls}">
+            <div class="chore-info">
+              <div class="chore-name">${c.name}</div>
+              <div class="chore-meta">${lastText}</div>
+            </div>
+            <span class="chore-badge badge-${s.cls}">${s.text}</span>
+            <div class="chore-actions">
+              <button class="btn-done" onclick="markDone('${key}')">完成了！</button>
+              <button class="btn-icon" onclick="openEditModal('${key}')">✏️</button>
+            </div>
+          </div>`;
+      }).join("");
+
+      document.getElementById("count-overdue").textContent = overdue;
+      document.getElementById("count-soon").textContent = soon;
+      document.getElementById("count-ok").textContent = ok;
+    }
+
+    window.markDone = function(key) {
+      set(ref(db, `chores/${key}/lastDone`), new Date().toISOString());
+    };
+
+    window.openAddModal = function() {
+      editingKey = null;
+      document.getElementById("modal-title").textContent = "新增家事";
+      document.getElementById("input-name").value = "";
+      document.getElementById("input-days").value = "";
+      document.getElementById("btn-delete-item").style.display = "none";
+      document.getElementById("modal-bg").classList.add("open");
+      document.getElementById("input-name").focus();
+    };
+
+    window.openEditModal = function(key) {
+      editingKey = key;
+      const c = chores[key];
+      document.getElementById("modal-title").textContent = "編輯家事";
+      document.getElementById("input-name").value = c.name;
+      document.getElementById("input-days").value = c.days;
+      document.getElementById("btn-delete-item").style.display = "block";
+      document.getElementById("modal-bg").classList.add("open");
+    };
+
+    window.closeModal = function() {
+      document.getElementById("modal-bg").classList.remove("open");
+    };
+
+    window.saveItem = function() {
+      const name = document.getElementById("input-name").value.trim();
+      const days = parseInt(document.getElementById("input-days").value);
+      if (!name || !days || days < 1) return alert("請填寫名稱和天數");
+
+      const key = editingKey || (Date.now() + Math.random().toString(36).slice(2));
+      const existing = editingKey ? chores[editingKey] : {};
+      set(ref(db, `chores/${key}`), {
+        name,
+        days,
+        lastDone: existing.lastDone || null
+      });
+      closeModal();
+    };
+
+    window.deleteItem = function() {
+      if (!editingKey) return;
+      if (confirm(`確定刪除「${chores[editingKey].name}」？`)) {
+        remove(ref(db, `chores/${editingKey}`));
+        closeModal();
+      }
+    };
+
+    document.getElementById("modal-bg").addEventListener("click", e => {
+      if (e.target === document.getElementById("modal-bg")) closeModal();
+    });
+
+    // PWA manifest
+    const manifest = {
+      name: "家事追蹤",
+      short_name: "家事",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#f1f5f9",
+      theme_color: "#6366f1",
+      icons: [{ src: "https://api.iconify.design/twemoji/house.svg", sizes: "192x192", type: "image/svg+xml" }]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+    document.getElementById("manifest-placeholder").href = URL.createObjectURL(blob);
+  </script>
+</body>
+</html>
