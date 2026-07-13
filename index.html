@@ -214,6 +214,10 @@
       <input type="text" id="input-name" placeholder="例：換床單">
       <label>週期（天）</label>
       <input type="number" id="input-days" placeholder="例：30" min="1">
+      <div id="lastdone-row">
+        <label>上次完成日期</label>
+        <input type="date" id="input-lastdone">
+      </div>
       <div class="modal-btns">
         <button class="btn-cancel" onclick="closeModal()">取消</button>
         <button id="btn-delete-item" class="btn-delete" onclick="deleteItem()" style="display:none">刪除</button>
@@ -328,6 +332,7 @@
       document.getElementById("modal-title").textContent = "新增家事";
       document.getElementById("input-name").value = "";
       document.getElementById("input-days").value = "";
+      document.getElementById("lastdone-row").style.display = "none";
       document.getElementById("btn-delete-item").style.display = "none";
       document.getElementById("modal-bg").classList.add("open");
       document.getElementById("input-name").focus();
@@ -339,6 +344,9 @@
       document.getElementById("modal-title").textContent = "編輯家事";
       document.getElementById("input-name").value = c.name;
       document.getElementById("input-days").value = c.days;
+      document.getElementById("lastdone-row").style.display = "block";
+      const lastDoneVal = c.lastDone ? new Date(c.lastDone).toISOString().slice(0, 10) : "";
+      document.getElementById("input-lastdone").value = lastDoneVal;
       document.getElementById("btn-delete-item").style.display = "block";
       document.getElementById("modal-bg").classList.add("open");
     };
@@ -354,11 +362,9 @@
 
       const key = editingKey || (Date.now() + Math.random().toString(36).slice(2));
       const existing = editingKey ? chores[editingKey] : {};
-      set(ref(db, `chores/${key}`), {
-        name,
-        days,
-        lastDone: existing.lastDone || null
-      });
+      const lastDoneInput = document.getElementById("input-lastdone").value;
+      const lastDone = lastDoneInput ? new Date(lastDoneInput).toISOString() : (existing.lastDone || null);
+      set(ref(db, `chores/${key}`), { name, days, lastDone });
       closeModal();
     };
 
