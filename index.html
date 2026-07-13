@@ -183,7 +183,17 @@
       margin-top: 8px;
       align-items: center;
     }
-    .stock-input-row input { margin-top: 0; }
+    .stock-input-row input, .stock-input-row select { margin-top: 0; }
+    .stock-input-row select {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      outline: none;
+      background: white;
+      color: #1e293b;
+    }
+    .stock-input-row select:focus { border-color: #6366f1; }
     .btn-add-stock {
       background: #ede9fe;
       color: #6d28d9;
@@ -375,8 +385,17 @@
       <div class="stocks-in-modal" id="stocks-in-modal"></div>
       <div class="stock-input-row">
         <input type="text" id="input-stock-qty" placeholder="數量 例：兩包" style="flex:1">
-        <input type="text" id="input-stock-loc" placeholder="位置 例：床頭櫃" style="flex:2">
+        <select id="input-stock-loc" style="flex:2" onchange="toggleCustomLoc(this)">
+          <option value="">選擇位置…</option>
+          <option>客廳收納椅</option>
+          <option>儲藏室收納椅</option>
+          <option>床頭櫃抽屜</option>
+          <option>衣櫃</option>
+          <option>化妝抽屜</option>
+          <option value="__other__">其他（自填）</option>
+        </select>
       </div>
+      <input type="text" id="input-stock-loc-custom" placeholder="請輸入位置" style="display:none;margin-top:6px">
       <button class="btn-add-stock" onclick="addStockTag()">＋ 加入這筆庫存</button>
       <div class="modal-btns">
         <button class="btn-cancel" onclick="closeSupplyModal()">取消</button>
@@ -583,7 +602,7 @@
       document.getElementById("supply-modal-title").textContent = "新增備品";
       document.getElementById("input-supply-name").value = "";
       document.getElementById("input-stock-qty").value = "";
-      document.getElementById("input-stock-loc").value = "";
+      resetLocFields();
       document.getElementById("btn-delete-supply").style.display = "none";
       renderStockTags();
       document.getElementById("supply-modal-bg").classList.add("open");
@@ -597,7 +616,7 @@
       document.getElementById("supply-modal-title").textContent = "編輯備品";
       document.getElementById("input-supply-name").value = s.name;
       document.getElementById("input-stock-qty").value = "";
-      document.getElementById("input-stock-loc").value = "";
+      resetLocFields();
       document.getElementById("btn-delete-supply").style.display = "block";
       renderStockTags();
       document.getElementById("supply-modal-bg").classList.add("open");
@@ -607,13 +626,29 @@
       document.getElementById("supply-modal-bg").classList.remove("open");
     };
 
+    window.toggleCustomLoc = function(sel) {
+      const custom = document.getElementById("input-stock-loc-custom");
+      custom.style.display = sel.value === "__other__" ? "block" : "none";
+      if (sel.value === "__other__") custom.focus();
+    };
+
+    function resetLocFields() {
+      document.getElementById("input-stock-loc").value = "";
+      const custom = document.getElementById("input-stock-loc-custom");
+      custom.value = "";
+      custom.style.display = "none";
+    }
+
     window.addStockTag = function() {
       const qty = document.getElementById("input-stock-qty").value.trim();
-      const location = document.getElementById("input-stock-loc").value.trim();
+      const sel = document.getElementById("input-stock-loc");
+      const location = sel.value === "__other__"
+        ? document.getElementById("input-stock-loc-custom").value.trim()
+        : sel.value;
       if (!qty || !location) return alert("請填寫數量和位置");
       pendingStocks.push({ qty, location });
       document.getElementById("input-stock-qty").value = "";
-      document.getElementById("input-stock-loc").value = "";
+      resetLocFields();
       renderStockTags();
       document.getElementById("input-stock-qty").focus();
     };
