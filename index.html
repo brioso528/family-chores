@@ -166,15 +166,18 @@
       white-space: nowrap;
     }
     .stock-location { flex: 1; }
-    .btn-stock-del {
+    .btn-stock-action {
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 0.9rem;
-      color: #cbd5e1;
-      padding: 2px 4px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      padding: 2px 5px;
+      border-radius: 6px;
+      transition: background 0.1s, color 0.1s;
     }
-    .btn-stock-del:hover { color: #ef4444; }
+    .btn-stock-action:hover { background: #f1f5f9; color: #475569; }
+    .btn-stock-done:hover { background: #fee2e2 !important; color: #dc2626 !important; }
 
     /* 備品Modal內的庫存欄位 */
     .stock-input-row {
@@ -593,6 +596,8 @@
           <div class="stock-row">
             <span class="stock-qty">${st.qty}</span>
             <span class="stock-location">${st.location}</span>
+            <button class="btn-stock-action" onclick="editStockQty('${key}',${i})" title="修改數量">✏️</button>
+            <button class="btn-stock-action btn-stock-done" onclick="removeStock('${key}',${i})" title="用完了">✕</button>
           </div>`).join("");
         return `
           <div class="supply-item">
@@ -706,6 +711,25 @@
       const key = editingSupplyKey || (Date.now() + Math.random().toString(36).slice(2));
       set(ref(db, `supplies/${key}`), { name, stocks: pendingStocks });
       closeSupplyModal();
+    };
+
+    window.editStockQty = function(supplyKey, i) {
+      const s = supplies[supplyKey];
+      const stocks = s.stocks ? [...s.stocks] : [];
+      const newQty = prompt(`「${stocks[i].location}」目前數量：${stocks[i].qty}\n\n請輸入新的數量：`, stocks[i].qty);
+      if (newQty === null) return;
+      if (!newQty.trim()) return alert("數量不能空白");
+      stocks[i] = { ...stocks[i], qty: newQty.trim() };
+      set(ref(db, `supplies/${supplyKey}/stocks`), stocks);
+    };
+
+    window.removeStock = function(supplyKey, i) {
+      const s = supplies[supplyKey];
+      const stocks = s.stocks ? [...s.stocks] : [];
+      const st = stocks[i];
+      if (!confirm(`確定「${st.location}」的「${st.qty}」用完了？`)) return;
+      stocks.splice(i, 1);
+      set(ref(db, `supplies/${supplyKey}/stocks`), stocks.length ? stocks : null);
     };
 
     window.deleteSupply = function() {
