@@ -275,8 +275,9 @@
       const last = new Date(chore.lastDone);
       const next = new Date(last.getTime() + chore.days * 86400000);
       const now = new Date();
-      const diffDays = Math.round((next - now) / 86400000);
-      if (diffDays < 0) return { text: `逾期 ${-diffDays} 天`, cls: "overdue", sort: diffDays };
+      const diff = (next - now) / 86400000;
+      const diffDays = Math.floor(diff);
+      if (diff < 0) return { text: `逾期 ${Math.ceil(-diff)} 天`, cls: "overdue", sort: diffDays };
       if (diffDays <= 3) return { text: `${diffDays} 天後到期`, cls: "soon", sort: diffDays };
       return { text: `${diffDays} 天後到期`, cls: "ok", sort: diffDays };
     }
