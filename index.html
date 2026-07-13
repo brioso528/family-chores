@@ -423,6 +423,7 @@
     const db = getDatabase(app);
     const choresRef = ref(db, "chores");
     const suppliesRef = ref(db, "supplies");
+    const customLocsRef = ref(db, "customLocations");
 
     const DEFAULT_CHORES = [
       { name: "換床單", days: 30 },
@@ -435,10 +436,13 @@
 
     let chores = {};
     let supplies = {};
+    let customLocations = [];
     let editingKey = null;
     let editingSupplyKey = null;
     let pendingStocks = [];
     let currentTab = "chores";
+
+    const DEFAULT_LOCATIONS = ["客廳收納椅", "儲藏室收納椅", "床頭櫃抽屜", "衣櫃", "化妝抽屜"];
 
     document.getElementById("sync-status").textContent = "同步中...";
 
@@ -458,6 +462,11 @@
     onValue(suppliesRef, (snapshot) => {
       supplies = snapshot.val() || {};
       renderSupplies();
+    });
+
+    onValue(customLocsRef, (snapshot) => {
+      customLocations = snapshot.val() ? Object.values(snapshot.val()) : [];
+      rebuildLocSelect();
     });
 
     // ── Tab 切換 ──
@@ -626,6 +635,23 @@
       document.getElementById("supply-modal-bg").classList.remove("open");
     };
 
+    function rebuildLocSelect() {
+      const sel = document.getElementById("input-stock-loc");
+      const current = sel.value;
+      sel.innerHTML = '<option value="">選擇位置…</option>';
+      [...DEFAULT_LOCATIONS, ...customLocations].forEach(loc => {
+        const o = document.createElement("option");
+        o.value = loc;
+        o.textContent = loc;
+        sel.appendChild(o);
+      });
+      const other = document.createElement("option");
+      other.value = "__other__";
+      other.textContent = "其他（自填）";
+      sel.appendChild(other);
+      if (current) sel.value = current;
+    }
+
     window.toggleCustomLoc = function(sel) {
       const custom = document.getElementById("input-stock-loc-custom");
       custom.style.display = sel.value === "__other__" ? "block" : "none";
@@ -642,10 +668,18 @@
     window.addStockTag = function() {
       const qty = document.getElementById("input-stock-qty").value.trim();
       const sel = document.getElementById("input-stock-loc");
-      const location = sel.value === "__other__"
+      const isCustom = sel.value === "__other__";
+      const location = isCustom
         ? document.getElementById("input-stock-loc-custom").value.trim()
         : sel.value;
       if (!qty || !location) return alert("請填寫數量和位置");
+
+      // 自填位置 → 存到 Firebase，下次自動出現在選單
+      if (isCustom && !customLocations.includes(location)) {
+        const key = Date.now() + Math.random().toString(36).slice(2);
+        set(ref(db, `customLocations/${key}`), location);
+      }
+
       pendingStocks.push({ qty, location });
       document.getElementById("input-stock-qty").value = "";
       resetLocFields();
