@@ -20,17 +20,42 @@
     header {
       background: #6366f1;
       color: white;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 16px 20px 0;
       position: sticky;
       top: 0;
       z-index: 10;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+    }
     header h1 { font-size: 1.2rem; font-weight: 700; }
     #sync-status { font-size: 0.75rem; opacity: 0.85; }
+    .tabs {
+      display: flex;
+      gap: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.65);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 10px 0;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      color: white;
+      border-bottom-color: white;
+    }
+
+    /* 家事頁 */
     .stats {
       display: flex;
       gap: 10px;
@@ -104,6 +129,96 @@
       color: #94a3b8;
     }
     .btn-icon:hover { color: #475569; }
+
+    /* 備品頁 */
+    .supplies-list { padding: 16px 16px 100px; }
+    .supply-item {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .supply-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .supply-name { font-weight: 600; font-size: 1rem; }
+    .stock-list { margin-top: 6px; }
+    .stock-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      border-top: 1px solid #f1f5f9;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+    .stock-qty {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .stock-location { flex: 1; }
+    .btn-stock-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      padding: 2px 4px;
+    }
+    .btn-stock-del:hover { color: #ef4444; }
+
+    /* 備品Modal內的庫存欄位 */
+    .stock-input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    .stock-input-row input { margin-top: 0; }
+    .btn-add-stock {
+      background: #ede9fe;
+      color: #6d28d9;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      margin-top: 8px;
+    }
+    .stocks-in-modal { margin-top: 6px; }
+    .stock-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      margin: 3px 3px 0 0;
+    }
+    .stock-tag-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      padding: 0;
+      line-height: 1;
+    }
+    .stock-tag-del:hover { color: #ef4444; }
+
+    /* FAB */
     .fab {
       position: fixed;
       bottom: 24px;
@@ -120,7 +235,9 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      z-index: 20;
     }
+
     /* Modal */
     .modal-bg {
       display: none;
@@ -138,6 +255,8 @@
       padding: 24px 20px 40px;
       width: 100%;
       max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .modal h2 { font-size: 1.1rem; margin-bottom: 16px; }
     .modal label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 4px; margin-top: 12px; }
@@ -183,30 +302,50 @@
       cursor: pointer;
       font-weight: 600;
     }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
     @media (prefers-color-scheme: dark) {
       body { background: #0f172a; color: #e2e8f0; }
-      .stat-card, .chore-item, .modal { background: #1e293b; }
+      .stat-card, .chore-item, .supply-item, .modal { background: #1e293b; }
       .modal input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
       .btn-cancel { background: #334155; color: #cbd5e1; }
+      .stock-row { border-top-color: #1e293b; }
+      .stock-tag { background: #334155; color: #e2e8f0; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🏠 家事追蹤</h1>
-    <span id="sync-status">連線中...</span>
+    <div class="header-top">
+      <h1>🏠 家事管理</h1>
+      <span id="sync-status">連線中...</span>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('chores')">🧹 家事</button>
+      <button class="tab-btn" onclick="switchTab('supplies')">📦 備品庫存</button>
+    </div>
   </header>
 
-  <div class="stats">
-    <div class="stat-card overdue"><div class="num" id="count-overdue">0</div><div class="label">逾期</div></div>
-    <div class="stat-card soon"><div class="num" id="count-soon">0</div><div class="label">即將到期</div></div>
-    <div class="stat-card ok"><div class="num" id="count-ok">0</div><div class="label">良好</div></div>
+  <!-- 家事頁 -->
+  <div id="page-chores" class="page active">
+    <div class="stats">
+      <div class="stat-card overdue"><div class="num" id="count-overdue">0</div><div class="label">逾期</div></div>
+      <div class="stat-card soon"><div class="num" id="count-soon">0</div><div class="label">即將到期</div></div>
+      <div class="stat-card ok"><div class="num" id="count-ok">0</div><div class="label">良好</div></div>
+    </div>
+    <div class="chores-list" id="chores-list"></div>
   </div>
 
-  <div class="chores-list" id="chores-list"></div>
+  <!-- 備品頁 -->
+  <div id="page-supplies" class="page">
+    <div class="supplies-list" id="supplies-list"></div>
+  </div>
 
-  <button class="fab" onclick="openAddModal()">＋ 新增家事</button>
+  <button class="fab" id="fab-btn" onclick="openAddModal()">＋ 新增家事</button>
 
+  <!-- 家事 Modal -->
   <div class="modal-bg" id="modal-bg">
     <div class="modal">
       <h2 id="modal-title">新增家事</h2>
@@ -222,6 +361,27 @@
         <button class="btn-cancel" onclick="closeModal()">取消</button>
         <button id="btn-delete-item" class="btn-delete" onclick="deleteItem()" style="display:none">刪除</button>
         <button class="btn-save" onclick="saveItem()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備品 Modal -->
+  <div class="modal-bg" id="supply-modal-bg">
+    <div class="modal">
+      <h2 id="supply-modal-title">新增備品</h2>
+      <label>備品名稱</label>
+      <input type="text" id="input-supply-name" placeholder="例：衛生棉35cm">
+      <label>庫存（可新增多筆）</label>
+      <div class="stocks-in-modal" id="stocks-in-modal"></div>
+      <div class="stock-input-row">
+        <input type="text" id="input-stock-qty" placeholder="數量 例：兩包" style="flex:1">
+        <input type="text" id="input-stock-loc" placeholder="位置 例：床頭櫃" style="flex:2">
+      </div>
+      <button class="btn-add-stock" onclick="addStockTag()">＋ 加入這筆庫存</button>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeSupplyModal()">取消</button>
+        <button id="btn-delete-supply" class="btn-delete" onclick="deleteSupply()" style="display:none">刪除</button>
+        <button class="btn-save" onclick="saveSupply()">儲存</button>
       </div>
     </div>
   </div>
@@ -243,6 +403,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const choresRef = ref(db, "chores");
+    const suppliesRef = ref(db, "supplies");
 
     const DEFAULT_CHORES = [
       { name: "換床單", days: 30 },
@@ -254,14 +415,16 @@
     ];
 
     let chores = {};
+    let supplies = {};
     let editingKey = null;
+    let editingSupplyKey = null;
+    let pendingStocks = [];
+    let currentTab = "chores";
 
     document.getElementById("sync-status").textContent = "同步中...";
 
     onValue(choresRef, (snapshot) => {
       chores = snapshot.val() || {};
-
-      // 首次使用時寫入預設資料
       if (Object.keys(chores).length === 0) {
         DEFAULT_CHORES.forEach(c => {
           const key = Date.now() + Math.random().toString(36).slice(2);
@@ -269,11 +432,27 @@
         });
         return;
       }
-
       renderChores();
       document.getElementById("sync-status").textContent = "已同步 ✓";
     });
 
+    onValue(suppliesRef, (snapshot) => {
+      supplies = snapshot.val() || {};
+      renderSupplies();
+    });
+
+    // ── Tab 切換 ──
+    window.switchTab = function(tab) {
+      currentTab = tab;
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      event.target.classList.add("active");
+      document.getElementById("page-" + tab).classList.add("active");
+      document.getElementById("fab-btn").textContent = tab === "chores" ? "＋ 新增家事" : "＋ 新增備品";
+      document.getElementById("fab-btn").onclick = tab === "chores" ? openAddModal : openAddSupplyModal;
+    };
+
+    // ── 家事邏輯 ──
     function getStatus(chore) {
       if (!chore.lastDone) return { text: "從未完成", cls: "never", sort: -1 };
       const last = new Date(chore.lastDone);
@@ -289,21 +468,15 @@
     function renderChores() {
       const list = document.getElementById("chores-list");
       let overdue = 0, soon = 0, ok = 0;
-
-      const sorted = Object.entries(chores).sort((a, b) => {
-        return getStatus(a[1]).sort - getStatus(b[1]).sort;
-      });
-
+      const sorted = Object.entries(chores).sort((a, b) => getStatus(a[1]).sort - getStatus(b[1]).sort);
       list.innerHTML = sorted.map(([key, c]) => {
         const s = getStatus(c);
         if (s.cls === "overdue" || s.cls === "never") overdue++;
         else if (s.cls === "soon") soon++;
         else ok++;
-
         const lastText = c.lastDone
           ? `上次：${new Date(c.lastDone).toLocaleDateString("zh-TW")} ・ 每 ${c.days} 天`
           : `每 ${c.days} 天`;
-
         return `
           <div class="chore-item ${s.cls === "never" ? "overdue" : s.cls}">
             <div class="chore-info">
@@ -317,7 +490,6 @@
             </div>
           </div>`;
       }).join("");
-
       document.getElementById("count-overdue").textContent = overdue;
       document.getElementById("count-soon").textContent = soon;
       document.getElementById("count-ok").textContent = ok;
@@ -359,7 +531,6 @@
       const name = document.getElementById("input-name").value.trim();
       const days = parseInt(document.getElementById("input-days").value);
       if (!name || !days || days < 1) return alert("請填寫名稱和天數");
-
       const key = editingKey || (Date.now() + Math.random().toString(36).slice(2));
       const existing = editingKey ? chores[editingKey] : {};
       const lastDoneInput = document.getElementById("input-lastdone").value;
@@ -380,7 +551,107 @@
       if (e.target === document.getElementById("modal-bg")) closeModal();
     });
 
-    // PWA manifest - 用canvas產生有padding的圖示
+    // ── 備品邏輯 ──
+    function renderSupplies() {
+      const list = document.getElementById("supplies-list");
+      const entries = Object.entries(supplies);
+      if (entries.length === 0) {
+        list.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.95rem;">還沒有備品，點右下角新增</div>`;
+        return;
+      }
+      list.innerHTML = entries.map(([key, s]) => {
+        const stocks = s.stocks || [];
+        const stockRows = stocks.map((st, i) => `
+          <div class="stock-row">
+            <span class="stock-qty">${st.qty}</span>
+            <span class="stock-location">${st.location}</span>
+          </div>`).join("");
+        return `
+          <div class="supply-item">
+            <div class="supply-header">
+              <div class="supply-name">📦 ${s.name}</div>
+              <button class="btn-icon" onclick="openEditSupplyModal('${key}')">✏️</button>
+            </div>
+            <div class="stock-list">${stockRows || '<div style="font-size:0.8rem;color:#94a3b8;padding-top:4px;">尚無庫存記錄</div>'}</div>
+          </div>`;
+      }).join("");
+    }
+
+    window.openAddSupplyModal = function() {
+      editingSupplyKey = null;
+      pendingStocks = [];
+      document.getElementById("supply-modal-title").textContent = "新增備品";
+      document.getElementById("input-supply-name").value = "";
+      document.getElementById("input-stock-qty").value = "";
+      document.getElementById("input-stock-loc").value = "";
+      document.getElementById("btn-delete-supply").style.display = "none";
+      renderStockTags();
+      document.getElementById("supply-modal-bg").classList.add("open");
+      document.getElementById("input-supply-name").focus();
+    };
+
+    window.openEditSupplyModal = function(key) {
+      editingSupplyKey = key;
+      const s = supplies[key];
+      pendingStocks = s.stocks ? [...s.stocks] : [];
+      document.getElementById("supply-modal-title").textContent = "編輯備品";
+      document.getElementById("input-supply-name").value = s.name;
+      document.getElementById("input-stock-qty").value = "";
+      document.getElementById("input-stock-loc").value = "";
+      document.getElementById("btn-delete-supply").style.display = "block";
+      renderStockTags();
+      document.getElementById("supply-modal-bg").classList.add("open");
+    };
+
+    window.closeSupplyModal = function() {
+      document.getElementById("supply-modal-bg").classList.remove("open");
+    };
+
+    window.addStockTag = function() {
+      const qty = document.getElementById("input-stock-qty").value.trim();
+      const location = document.getElementById("input-stock-loc").value.trim();
+      if (!qty || !location) return alert("請填寫數量和位置");
+      pendingStocks.push({ qty, location });
+      document.getElementById("input-stock-qty").value = "";
+      document.getElementById("input-stock-loc").value = "";
+      renderStockTags();
+      document.getElementById("input-stock-qty").focus();
+    };
+
+    window.removeStockTag = function(i) {
+      pendingStocks.splice(i, 1);
+      renderStockTags();
+    };
+
+    function renderStockTags() {
+      document.getElementById("stocks-in-modal").innerHTML = pendingStocks.map((st, i) => `
+        <span class="stock-tag">
+          <b>${st.qty}</b> · ${st.location}
+          <button class="stock-tag-del" onclick="removeStockTag(${i})">✕</button>
+        </span>`).join("");
+    }
+
+    window.saveSupply = function() {
+      const name = document.getElementById("input-supply-name").value.trim();
+      if (!name) return alert("請填寫備品名稱");
+      const key = editingSupplyKey || (Date.now() + Math.random().toString(36).slice(2));
+      set(ref(db, `supplies/${key}`), { name, stocks: pendingStocks });
+      closeSupplyModal();
+    };
+
+    window.deleteSupply = function() {
+      if (!editingSupplyKey) return;
+      if (confirm(`確定刪除「${supplies[editingSupplyKey].name}」？`)) {
+        remove(ref(db, `supplies/${editingSupplyKey}`));
+        closeSupplyModal();
+      }
+    };
+
+    document.getElementById("supply-modal-bg").addEventListener("click", e => {
+      if (e.target === document.getElementById("supply-modal-bg")) closeSupplyModal();
+    });
+
+    // ── PWA manifest ──
     function makeIconWithPadding(src, size) {
       return new Promise(resolve => {
         const img = new Image();
@@ -388,12 +659,10 @@
           const c = document.createElement('canvas');
           c.width = c.height = size;
           const ctx = c.getContext('2d');
-          // 白色圓角背景
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.roundRect(0, 0, size, size, size * 0.18);
           ctx.fill();
-          // 圖片縮到65%，置中
           const pad = size * 0.175;
           const draw = size - pad * 2;
           ctx.drawImage(img, pad, pad, draw, draw);
